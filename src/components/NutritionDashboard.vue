@@ -20,7 +20,7 @@
   
   <script>
   import VoiceRecorder from './VoiceRecorder.vue'
-  import { db, auth } from '@/firebase'
+  import { db, auth } from '../firebase.js'
   
   export default {
     components: { VoiceRecorder },

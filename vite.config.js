@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import path from 'path'  // Add this import
 
-// Fix for esbuild version mismatch issue
 export default defineConfig({
   plugins: [vue()],
   optimizeDeps: {
@@ -10,6 +10,12 @@ export default defineConfig({
       define: {
         global: "globalThis"
       }
+    }
+  },
+  // Add this resolve section
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
     }
   }
 })

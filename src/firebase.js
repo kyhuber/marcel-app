@@ -1,19 +1,17 @@
-// src/firebase.js
-import firebase from 'firebase/app'
-import 'firebase/firestore'
-import 'firebase/auth'
+import { initializeApp } from 'firebase/app'
+import { getFirestore } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAhyXzJPPZWg336WjsY5mdXKm9rkWzt4Tc",
-    authDomain: "marcel-61c2f.firebaseapp.com",
-    projectId: "marcel-61c2f",
-    storageBucket: "marcel-61c2f.firebasestorage.app",
-    messagingSenderId: "833878578327",
-    appId: "1:833878578327:web:c6e0cae7355ad41c11c5d2",
-    measurementId: "G-46RLZ1FZ73"
-  };
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  // other config params
+}
 
-firebase.initializeApp(firebaseConfig)
+// Initialize Firebase
+const app = initializeApp(firebaseConfig)
 
-export const db = firebase.firestore()
-export const auth = firebase.auth()
+// Export Firestore and Auth
+export const db = getFirestore(app)
+export const auth = getAuth(app)
