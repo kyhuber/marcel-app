@@ -1,18 +1,21 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path'  // Add this import
+import path from 'path'
 
 export default defineConfig({
   plugins: [vue()],
-  optimizeDeps: {
-    esbuildOptions: {
-      // override to avoid using the broken binary
-      define: {
-        global: "globalThis"
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return 'vendor'
+          }
+        }
       }
     }
   },
-  // Add this resolve section
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')

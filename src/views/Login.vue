@@ -14,13 +14,8 @@
   <script setup>
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { 
-    getAuth, 
-    signInWithPopup, 
-    GoogleAuthProvider 
-  } from 'firebase/auth'
+  import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
   
-  // Setup reactive variables
   const error = ref(null)
   const router = useRouter()
   
@@ -30,12 +25,10 @@
     
     try {
       const result = await signInWithPopup(auth, provider)
-      
       error.value = null
       router.push('/dashboard')
     } catch (err) {
       console.error('Login error', err)
-      
       error.value = err.message || 'An error occurred during login'
     }
   }
@@ -46,28 +39,29 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    background-color: #f0f2f5;
+    min-height: 100vh;
+    padding: 1rem;
   }
   
   .login-card {
+    width: 100%;
+    max-width: 350px;
     background-color: white;
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 30px;
+    padding: 2rem;
     text-align: center;
-    width: 300px;
   }
   
   .google-signin {
-    background-color: #4285F4;
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 20px;
+    width: 100%;
+    margin-top: 1rem;
     transition: background-color 0.3s ease;
   }
   
@@ -77,7 +71,14 @@
   
   .error-message {
     color: red;
-    margin-top: 15px;
-    font-size: 14px;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+  }
+  
+  @media (max-width: 480px) {
+    .login-card {
+      width: 95%;
+      padding: 1.5rem;
+    }
   }
   </style>

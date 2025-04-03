@@ -1,101 +1,180 @@
 <template>
-  <div class="dashboard">
-    <div class="nutrition-summary">
-      <h1>Marcel Nutrition Tracker</h1>
-      
-      <div class="daily-stats">
-        <div class="stat-card">
-          <h3>Calories</h3>
-          <p>{{ dailyCalories }} cal</p>
-        </div>
-        <div class="stat-card">
-          <h3>Protein</h3>
-          <p>{{ dailyProtein }}g</p>
+  <div class="dashboard-container">
+    <header class="dashboard-header">
+      <h1>Nutrition Tracker</h1>
+      <button @click="logout" class="logout-btn">Logout</button>
+    </header>
+
+    <section class="nutrition-summary">
+      <div class="summary-card">
+        <h2>Today's Intake</h2>
+        <div class="nutrition-stats">
+          <div class="stat-item">
+            <span class="stat-label">Calories</span>
+            <span class="stat-value">{{ totalCalories }} cal</span>
+            <ProgressBar 
+              :value="totalCalories" 
+              :max="2000" 
+              color="#4285F4"
+            />
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Protein</span>
+            <span class="stat-value">{{ totalProtein }}g</span>
+            <ProgressBar 
+              :value="totalProtein" 
+              :max="100" 
+              color="#34A853"
+            />
+          </div>
         </div>
       </div>
+    </section>
 
-      <nutrition-dashboard></nutrition-dashboard>
-      <voice-recorder></voice-recorder>
-    </div>
+    <section class="voice-input">
+      <button 
+        @click="startVoiceRecording" 
+        class="record-btn"
+      >
+        <MicIcon />
+        Record Meal
+      </button>
+    </section>
+
+    <section class="recent-meals">
+      <h2>Recent Meals</h2>
+      <MealList :meals="recentMeals" />
+    </section>
   </div>
 </template>
 
-<script>
-import NutritionDashboard from '@/components/NutritionDashboard.vue'
-import VoiceRecorder from '@/components/VoiceRecorder.vue'
-import { db, auth } from '@/firebase'
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { 
+  getAuth, 
+  signOut 
+} from 'firebase/auth'
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy, 
+  limit 
+} from 'firebase/firestore'
 
-export default {
-  name: 'Dashboard',
-  components: {
-    NutritionDashboard,
-    VoiceRecorder
-  },
-  data() {
-    return {
-      dailyCalories: 0,
-      dailyProtein: 0
-    }
-  },
-  mounted() {
-    this.fetchDailyNutrition()
-  },
-  methods: {
-    async fetchDailyNutrition() {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
+import { db } from '@/firebase'
+import ProgressBar from '@/components/ProgressBar.vue'
+import MealList from '@/components/MealList.vue'
+import MicIcon from '@/components/icons/MicIcon.vue'
+import { aiProcessMeal } from '@/utils/aiMealProcessor'
+import { saveMealEntry } from '@/services/mealService'
 
-      try {
-        const snapshot = await db.collection('meals')
-          .where('userId', '==', auth.currentUser.uid)
-          .where('timestamp', '>=', today)
-          .get()
+const router = useRouter()
+const totalCalories = ref(0)
+const totalProtein = ref(0)
+const recentMeals = ref([])
 
-        snapshot.forEach(doc => {
-          const mealData = doc.data()
-          this.dailyCalories += mealData.calories || 0
-          this.dailyProtein += mealData.protein || 0
-        })
-      } catch (error) {
-        console.error('Error fetching daily nutrition:', error)
-      }
-    }
+const logout = async () => {
+  const auth = getAuth()
+  try {
+    await signOut(auth)
+    router.push('/')
+  } catch (error) {
+    console.error('Logout error', error)
   }
 }
+
+const startVoiceRecording = async () => {
+  if ('webkitSpeechRecognition' in window) {
+    const recognition = new webkitSpeechRecognition()
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.lang = 'en-US'
+
+    recognition.onresult = async (event) => {
+      const transcript = event.results[0][0].transcript
+      await processMealInput(transcript)
+    }
+
+    recognition.start()
+  } else {
+    alert('Speech recognition not supported')
+  }
+}
+
+const processMealInput = async (transcript) => {
+  // AI-powered meal processing logic
+  // This would integrate with OpenAI/Claude API
+  const mealDetails = await aiProcessMeal(transcript)
+  
+  // Save to Firestore
+  await saveMealEntry(mealDetails)
+}
+
+const fetchDailyNutrition = async () => {
+  const user = getAuth().currentUser
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const q = query(
+    collection(db, 'meals'),
+    where('userId', '==', user.uid),
+    where('timestamp', '>=', today),
+    orderBy('timestamp', 'desc')
+  )
+
+  const querySnapshot = await getDocs(q)
+  
+  totalCalories.value = 0
+  totalProtein.value = 0
+
+  querySnapshot.forEach((doc) => {
+    const meal = doc.data()
+    totalCalories.value += meal.calories
+    totalProtein.value += meal.protein
+  })
+}
+
+onMounted(async () => {
+  await fetchDailyNutrition()
+})
 </script>
 
 <style scoped>
-.dashboard {
+.dashboard-container {
   max-width: 600px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 1rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .nutrition-summary {
-  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
-.daily-stats {
+.nutrition-stats {
   display: flex;
-  justify-content: space-around;
-  margin: 20px 0;
+  justify-content: space-between;
 }
 
-.stat-card {
-  background-color: #f4f4f4;
+.record-btn {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
   border-radius: 8px;
-  padding: 15px;
-  width: 40%;
-}
-
-.stat-card h3 {
-  margin-bottom: 10px;
-  color: #333;
-}
-
-.stat-card p {
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #007bff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 </style>
